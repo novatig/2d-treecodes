@@ -549,8 +549,7 @@ void Tree::build(const realtype * const xsrc,
     
     int nsmxs = -1;
     CUDA_CHECK(cudaDeviceGetAttribute (&nsmxs, cudaDevAttrMultiProcessorCount, 0));
-    //printf("i have found %d smxs\n", nsmxs);
-   
+       
     const int device_queuesize = 8e4;
     const int device_bufsize = 8e4;
 
@@ -599,12 +598,12 @@ void Tree::build(const realtype * const xsrc,
     setup<<<1, 1>>>(nsrc);
 
 #ifndef NDEBUG
-    const int ysize = 16 / (ORDER / 12);
+    const int ysize = max(1, (int)(16.f / max(1.f, ORDER / 12.f)));
 #else
-    const int ysize = 28 / (ORDER / 12);
+    const int ysize = max(1, (int)(28.f / max(1.f, ORDER / 12.f)));
 #endif
     build_tree<<<nsmxs * 2, dim3(32, ysize), sizeof(realtype) * 4 * 4 * ORDER * ysize>>>(LEAF_MAXCOUNT, extent);
- CUDA_CHECK(cudaPeekAtLastError());
+    CUDA_CHECK(cudaPeekAtLastError());
     conclude<<<1, 1>>>(device_diag);
 
 #ifndef NDEBUG
@@ -637,7 +636,6 @@ void Tree::dispose()
     float timems;
     CUDA_CHECK(cudaEventElapsedTime(&timems, evstart,evstop  ));
     // printf("\x1B[33mtimems: %f\x1b[0m\n", timems);
-
     //printf("device has found %d nodes, and max queue size was %d, outstanding items %d, queue is good: %d\n",
     //   device_diag->ntreenodes, device_diag->queuesize, device_diag->nqueueitems, device_diag->good); 
 
@@ -977,7 +975,7 @@ namespace TreeCheck
 	assert(node->xcom() >= x0 && node->xcom() < x0 + h && node->ycom() >= y0 && node->ycom() < y0 + h || node->e - node->s == 0);
     }
 
-    bool verbose = false;
+    bool verbose = true;
 
     int check_bits(double x, double y)
     {
@@ -1055,7 +1053,10 @@ namespace TreeCheck
 	assert(a.s == b.s);
 	assert(a.e == b.e);
 	
-	assert(check_bits(a.mass, b.mass) >= 40 || fabs(b.mass) < 1e-10 && check_bits(a.mass, b.mass) >= 20);
+	
+	assert(check_bits(a.mass, b.mass) >= 40 || 
+	       fabs(b.mass) < 1e-11 && check_bits(a.mass, b.mass) >= 20 ||
+	       fabs(b.mass) < 1e-17 && check_bits(a.mass, b.mass) >= 8   );
 
 	if (fabs(b.w) >= 1e-16) 
 	    assert(check_bits(a.xcom, b.wx / b.w) >= 32 || b.w == 0);
