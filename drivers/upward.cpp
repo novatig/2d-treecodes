@@ -294,7 +294,7 @@ void Tree::build(const realtype * const xsrc, const realtype * const ysrc, const
     sort_sources(xsrc, ysrc, vsrc, nsrc, keys, xdata, ydata, vdata, &xmin, &ymin, &ext);
   
     currnnodes = 1;
-    maxnodes = 8e4;
+    maxnodes = (nsrc + leaf_maxcapacity - 1) / leaf_maxcapacity * 6;
     posix_memalign((void **)&nodes, 32, sizeof(Node) * maxnodes);
     posix_memalign((void **)&bufhelpers, 32, sizeof(NodeHelper) * maxnodes);
     posix_memalign((void **)&expansions, 32, sizeof(realtype) * 2 * ORDER * maxnodes);

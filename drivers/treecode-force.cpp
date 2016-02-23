@@ -23,27 +23,27 @@
 
 namespace EvaluateForce
 {
-  struct TimeDistrib
-  {
-    int64_t p2p, e2p, e2l, l2p ;
+    struct TimeDistrib
+    {
+	int64_t p2p, e2p, e2l, l2p ;
     
-    static __inline__ unsigned long long rdtsc(void)
-    {
-      unsigned hi, lo;
-      __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
-      return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
-    }
+	static __inline__ unsigned long long rdtsc(void)
+	    {
+		unsigned hi, lo;
+		__asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+		return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+	    }
 
-    void init() { p2p = e2p = e2l = l2p ; }
+	void init() { p2p = e2p = e2l = l2p ; }
 
-    void print(const int tid)
-    {
-      const double tot = std::max((int64_t)1, p2p + e2p + e2l + l2p) ;
-      printf("total: %.1e Mcycles p2p:%.1f%% e2p:%.1f%% e2l:%.1f%% l2p:%.1f%%\n", 
-	     tot * 1e-6, p2p * 100. / tot, e2p * 100. / tot, e2l * 100. / tot, l2p * 100. / tot);
-    }
+	void print(const int tid)
+	    {
+		const double tot = std::max((int64_t)1, p2p + e2p + e2l + l2p) ;
+		printf("total: %.1e Mcycles p2p:%.1f%% e2p:%.1f%% e2l:%.1f%% l2p:%.1f%%\n", 
+		       tot * 1e-6, p2p * 100. / tot, e2p * 100. / tot, e2l * 100. / tot, l2p * 100. / tot);
+	    }
 
-  } td;
+    } td;
 
 #pragma omp threadprivate(td)
 
@@ -61,9 +61,9 @@ namespace EvaluateForce
 
 	void _flush()
 	    {
-	      td.e2l -= td.rdtsc();
+		td.e2l -= td.rdtsc();
 		downward_e2l(x0s, y0s, masses, rxps, ixps, count, rdst, idst);
-	      td.e2l += td.rdtsc();
+		td.e2l += td.rdtsc();
 
 		count = 0;
 	    }
@@ -150,7 +150,7 @@ namespace EvaluateForce
 
 			if (node->r * node->r < theta * theta * r2)
 			{
-			  td.e2p -= td.rdtsc();
+			    td.e2p -= td.rdtsc();
 			    force_e2p_8x8(node->mass, x0 + (bx + 0) * h - xcom, y0 + (by + 0) * h - ycom, h,
 					  Tree::expansions + ORDER * (2 * nodeid + 0),
 					  Tree::expansions + ORDER * (2 * nodeid + 1),
@@ -212,21 +212,21 @@ namespace EvaluateForce
 			     realtype * const xdst,
 			     realtype * const ydst)
     {
-      const double t0 =  omp_get_wtime();
-	Tree::build(xsrc, ysrc, vsrc, nsrc, 192);
+	const double t0 =  omp_get_wtime();
+	Tree::build(xsrc, ysrc, vsrc, nsrc, 96);
 
 	const double t1 = omp_get_wtime();
 #pragma omp parallel
 	{
-	  td.init();
+	    td.init();
 
 #pragma omp for schedule(dynamic,1)	
-	       for(int i = 0; i < nblocks; ++i)
-		 evaluate(xdst + i * BLOCKSIZE * BLOCKSIZE, ydst + i * BLOCKSIZE * BLOCKSIZE, x0s[i], y0s[i], hs[i], theta);
+	    for(int i = 0; i < nblocks; ++i)
+		evaluate(xdst + i * BLOCKSIZE * BLOCKSIZE, ydst + i * BLOCKSIZE * BLOCKSIZE, x0s[i], y0s[i], hs[i], theta);
 
-	       const int tid = omp_get_thread_num();
-	       //printf("hello tid %d\n", tid);
-	       td.print(tid);
+	    const int tid = omp_get_thread_num();
+	    //printf("hello tid %d\n", tid);
+	    td.print(tid);
 	}
 
 	const double t2 = omp_get_wtime();
