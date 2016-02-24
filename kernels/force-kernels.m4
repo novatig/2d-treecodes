@@ -72,28 +72,35 @@ export void force_e2p_8x8(
 		uniform const realtype iz = y0 + iy * h;
 
 		LUNROLL(ix, 0, 1, `
-		const realtype TMP(r2, ix) = TMP(rz, ix) * TMP(rz, ix) + iz * iz;
-		const realtype TMP(rinvz_1, ix) = TMP(rz, ix) / TMP(r2, ix);
-		const realtype TMP(iinvz_1, ix) = -iz / TMP(r2, ix);
+		const realtype TMP(r2, ix) = TMP(rz, ix) * TMP(rz, ix) + iz * iz;')
+		LUNROLL(ix, 0, 1, `
+		const realtype TMP(rinvz_1, ix) = TMP(rz, ix) / TMP(r2, ix);')
+		LUNROLL(ix, 0, 1, `
+		const realtype TMP(iinvz_1, ix) = -iz / TMP(r2, ix);')
 
-		realtype TMP(rsum, ix) = mass * TMP(rinvz_1, ix), TMP(isum, ix) = mass * TMP(iinvz_1, ix);
+		LUNROLL(ix, 0, 1, `
+		realtype TMP(rsum, ix) = mass * TMP(rinvz_1, ix), TMP(isum, ix) = mass * TMP(iinvz_1, ix);')
+
+		LUNROLL(ix, 0, 1, `
 		realtype TMP(rprod, ix) = TMP(rinvz_1, ix), TMP(iprod, ix) = TMP(iinvz_1, ix);')
 
 		LUNROLL(j, 0, eval(ORDER - 1),`
 		{
-			const uniform realtype rrxp = rxp[j];
-			const uniform realtype iixp = ixp[j];
-			
 			LUNROLL(ix, 0, 1, `
 			const realtype TMP(rtmp, ix) = TMP(rprod, ix) * TMP(rinvz_1, ix) - TMP(iprod, ix) * TMP(iinvz_1, ix);
-	    		const realtype TMP(itmp, ix) = TMP(rprod, ix) * TMP(iinvz_1, ix) + TMP(iprod, ix) * TMP(rinvz_1, ix);
+	    		const realtype TMP(itmp, ix) = TMP(rprod, ix) * TMP(iinvz_1, ix) + TMP(iprod, ix) * TMP(rinvz_1, ix);')
 
+			LUNROLL(ix, 0, 1, `
 			TMP(rprod, ix) = TMP(rtmp, ix);
 	    		TMP(iprod, ix) = TMP(itmp, ix);')
 
+			uniform const realtype prefactor = eval(j + 1);
+			uniform const uniform realtype rrxp = rxp[j];
+			uniform const uniform realtype iixp = ixp[j];
+		
 			LUNROLL(ix, 0, 1, `
-			TMP(rsum, ix) -= (j + 1) * (rrxp * TMP(rprod, ix) - iixp * TMP(iprod, ix));
-	    		TMP(isum, ix) -= (j + 1) * (rrxp * TMP(iprod, ix) + iixp * TMP(rprod, ix));')
+			TMP(rsum, ix) -= prefactor * (rrxp * TMP(rprod, ix) - iixp * TMP(iprod, ix));
+	    		TMP(isum, ix) -= prefactor * (rrxp * TMP(iprod, ix) + iixp * TMP(rprod, ix));')
 		}')
 
 		LUNROLL(ix, 0, 1, `
