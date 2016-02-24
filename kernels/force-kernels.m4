@@ -64,36 +64,41 @@ export void force_e2p_8x8(
 			uniform realtype xresult[],
 			uniform realtype yresult[])
 {
-	foreach(d = 0 ... 64)
+	LUNROLL(ix, 0, 1, `
+	const realtype TMP(rz, ix) = x0 + (eval(ix * 4) + programIndex) * h;')
+	
+	for(uniform int iy = 0; iy < 8; ++iy)
 	{
-		const int ix = d & 7;
-		const int iy = d >> 3;
+		uniform const realtype iz = y0 + iy * h;
 
-		const realtype rz = x0 + ix * h;
-		const realtype iz = y0 + iy * h;
+		LUNROLL(ix, 0, 1, `
+		const realtype TMP(r2, ix) = TMP(rz, ix) * TMP(rz, ix) + iz * iz;
+		const realtype TMP(rinvz_1, ix) = TMP(rz, ix) / TMP(r2, ix);
+		const realtype TMP(iinvz_1, ix) = -iz / TMP(r2, ix);
 
-		const realtype r2 = rz * rz + iz * iz;
-
-		const realtype rinvz_1 = rz / r2;
-		const realtype iinvz_1 = -iz / r2;
-
-		realtype rsum = mass * rinvz_1, isum = mass * iinvz_1;
-		realtype rprod = rinvz_1, iprod = iinvz_1;
+		realtype TMP(rsum, ix) = mass * TMP(rinvz_1, ix), TMP(isum, ix) = mass * TMP(iinvz_1, ix);
+		realtype TMP(rprod, ix) = TMP(rinvz_1, ix), TMP(iprod, ix) = TMP(iinvz_1, ix);')
 
 		LUNROLL(j, 0, eval(ORDER - 1),`
 		{
-			const realtype rtmp = rprod * rinvz_1 - iprod * iinvz_1;
-	    		const realtype itmp = rprod * iinvz_1 + iprod * rinvz_1;
+			const uniform realtype rrxp = rxp[j];
+			const uniform realtype iixp = ixp[j];
+			
+			LUNROLL(ix, 0, 1, `
+			const realtype TMP(rtmp, ix) = TMP(rprod, ix) * TMP(rinvz_1, ix) - TMP(iprod, ix) * TMP(iinvz_1, ix);
+	    		const realtype TMP(itmp, ix) = TMP(rprod, ix) * TMP(iinvz_1, ix) + TMP(iprod, ix) * TMP(rinvz_1, ix);
 
-			rprod = rtmp;
-	    		iprod = itmp;
+			TMP(rprod, ix) = TMP(rtmp, ix);
+	    		TMP(iprod, ix) = TMP(itmp, ix);')
 
-			rsum -= (j + 1) * (rxp[j] * rprod - ixp[j] * iprod);
-	    		isum -= (j + 1) * (rxp[j] * iprod + ixp[j] * rprod);
+			LUNROLL(ix, 0, 1, `
+			TMP(rsum, ix) -= (j + 1) * (rrxp * TMP(rprod, ix) - iixp * TMP(iprod, ix));
+	    		TMP(isum, ix) -= (j + 1) * (rrxp * TMP(iprod, ix) + iixp * TMP(rprod, ix));')
 		}')
 
-	    	xresult[d] += rsum;
-		yresult[d] -= isum;
+		LUNROLL(ix, 0, 1, `
+	    	xresult[8 * iy + eval(ix * 4) + programIndex] += TMP(rsum, ix);
+		yresult[8 * iy + eval(ix * 4) + programIndex] -= TMP(isum, ix);')
 	}
 }
 
