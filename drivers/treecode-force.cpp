@@ -26,6 +26,7 @@ namespace EvaluateForce
     struct TimeDistrib
     {
 	int64_t p2p, e2p, e2l, l2p ;
+	int e2pcalls;
     
 	static __inline__ unsigned long long rdtsc(void)
 	    {
@@ -34,13 +35,19 @@ namespace EvaluateForce
 		return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
 	    }
 
-	void init() { p2p = e2p = e2l = l2p ; }
+	void init() { p2p = e2p = e2l = l2p = 0 ;
+	    e2pcalls = 0;}
 
 	void print(const int tid)
 	    {
 		const double tot = std::max((int64_t)1, p2p + e2p + e2l + l2p) ;
-		printf("total: %.1e Mcycles p2p:%.1f%% e2p:%.1f%% e2l:%.1f%% l2p:%.1f%%\n", 
-		       tot * 1e-6, p2p * 100. / tot, e2p * 100. / tot, e2l * 100. / tot, l2p * 100. / tot);
+
+		const double e2pflops = e2pcalls * 1. * (2 * 8 + 8 * (2 + 8 * (2 + 1 + 2 + 2) + 8 * ORDER * (6 + 10) + 8 * 2));
+		const double e2pFC = e2pflops / e2p;
+
+//		printf("calls %d\n", e2pcalls);
+		printf("total: %.1e Mcycles p2p:%.1f%% e2p:%.1f%% (%f F/C) e2l:%.1f%% l2p:%.1f%%\n", 
+		       tot * 1e-6, p2p * 100. / tot, e2p * 100. / tot, e2pFC, e2l * 100. / tot, l2p * 100. / tot);
 	    }
 
     } td;
@@ -156,6 +163,7 @@ namespace EvaluateForce
 					  Tree::expansions + ORDER * (2 * nodeid + 1),
 					  result, result + BRICKSIZE);
 			    td.e2p += td.rdtsc();
+			    ++td.e2pcalls;
 			}
 			else
 			{
