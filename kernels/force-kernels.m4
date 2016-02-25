@@ -111,7 +111,7 @@ export void force_e2p_8x8(
 
 define(mysign, `ifelse(eval((-1)**($1)), -1,-,+)')
 
-export void downward_e2l(
+export void force_e2l(
 	uniform const realtype x0s[],
 	uniform const realtype y0s[],
 	uniform const realtype masses[],
@@ -130,7 +130,7 @@ export void downward_e2l(
 
 		const realtype r2z0 = x0 * x0 + y0 * y0;
     		const realtype rinvz_1 = x0 / r2z0;
-    		const realtype iinvz_1 = -y0 / r2z0;
+    		const realtype iinvz_1 = -y0 / r2z0; //5 FLOPs
 
 		uniform const realtype * const rxp = rxps[i];
 		uniform const realtype * const ixp = ixps[i];
@@ -142,31 +142,33 @@ export void downward_e2l(
       	  		  const realtype TMP(iinvz, j) = TMP(rinvz, eval(j - 1)) * iinvz_1 + TMP(iinvz, eval(j - 1)) * rinvz_1;')
 
 	  		  const realtype TMP(rcoeff, j) = rxp[eval(j - 1)] * TMP(rinvz, j) - ixp[eval(j - 1)] * TMP(iinvz, j);
-      	  		  const realtype TMP(icoeff, j) = rxp[eval(j - 1)] * TMP(iinvz, j) + ixp[eval(j - 1)] * TMP(rinvz, j);
-      		')
+      	  		  const realtype TMP(icoeff, j) = rxp[eval(j - 1)] * TMP(iinvz, j) + ixp[eval(j - 1)] * TMP(rinvz, j); //12 FLOPs
+      		')//12 FLOPs * ORDER
 
 		LUNROLL(l, 1, eval(ORDER),`
       		{
 			realtype TMP(rtmp, l) = ifelse(l,1,` - mass', `mass * esyscmd(echo -1/eval(l) | bc --mathlib )');
-			realtype TMP(itmp, l) = 0;
+			realtype TMP(itmp, l) = 0;// 2 FLOPs
 
 			pushdef(`BINFAC', `BINOMIAL(eval(l + k - 1), eval(k - 1)).')dnl
 			 LUNROLL(k, 1, eval(ORDER),`
 			 TMP(rtmp, l) mysign(k)= ifelse(BINFAC,1.f,,`BINFAC *') TMP(rcoeff, k);
 			 TMP(itmp, l) mysign(k)= ifelse(BINFAC,1.f,,`BINFAC *') TMP(icoeff, k);
-			 ')
+			 ') //4 FLOPs * ORDER
 			popdef(`BINFAC')dnl
 
        			realtype rpartial = TMP(rtmp, l) * TMP(rinvz, l) - TMP(itmp, l) * TMP(iinvz, l);
-       			realtype ipartial = TMP(rtmp, l) * TMP(iinvz, l) + TMP(itmp, l) * TMP(rinvz, l);
+       			realtype ipartial = TMP(rtmp, l) * TMP(iinvz, l) + TMP(itmp, l) * TMP(rinvz, l); //6 FLOPs
 
 			rlocal[l] += reduce_add(rpartial);
-			ilocal[l] += reduce_add(ipartial);
+			ilocal[l] += reduce_add(ipartial); //2 FLOPs
 		}')
 	}
+
+	//TOTAL FLOP count: nexpansions * eval(5 + ORDER * 12 + ORDER * (2 + ORDER * 4 + 6 + 2))
 }
 
-export void downward_l2p_8x8(
+export void force_l2p_8x8(
        uniform const realtype x0,
        uniform const realtype y0,
        uniform const realtype h,
