@@ -20,8 +20,8 @@
 #include "force-kernels.h"
 #include "treecode-force.h"
 
-#define MIXPREC 
-#define INSTRUMENTATION
+//#define MIXPREC
+//#define INSTRUMENTATION
 
 #ifndef INSTRUMENTATION
 #define kernelcall(w, f, ...) f(__VA_ARGS__)
@@ -50,7 +50,7 @@ namespace EvaluateForce
 #ifdef MIXPREC
     float * xdataf32 = NULL, *ydataf32 = NULL, *vdataf32 = NULL;
 #endif
-    
+
     struct TimeDistrib
     {
 #ifdef MIXPREC
@@ -59,7 +59,7 @@ namespace EvaluateForce
 	int64_t force_p2p_8x8_cycles, force_p2p_8x8_calls;
 #endif
 	int64_t
-	    force_e2p_8x8_cycles, force_e2p_8x8_calls,
+	force_e2p_8x8_cycles, force_e2p_8x8_calls,
 	    force_e2l_cycles, force_e2l_calls,
 	    force_l2p_8x8_cycles, force_l2p_8x8_calls;
 
@@ -82,7 +82,7 @@ namespace EvaluateForce
 					    force_e2p_8x8_cycles +
 					    force_e2l_cycles +
 					    force_l2p_8x8_cycles );
-		
+
 		const double e2pflops =
 		    force_e2p_8x8_calls
 
@@ -95,34 +95,34 @@ namespace EvaluateForce
 		    (5 + ORDER * 12 + ORDER * (2 + ORDER * 4 + 6 + 2));
 
 		const double e2lFPC = e2lflops / force_e2l_cycles;
-		    
+
 		const double p2pCPP =
 #ifdef MIXPREC
 		    force_p2p_8x8f_cycles / 64. / force_p2p_8x8f_calls;
 #else
-		    force_p2p_8x8_cycles / 64. / force_p2p_8x8_calls;
+		force_p2p_8x8_cycles / 64. / force_p2p_8x8_calls;
 #endif
-		   
 
-		printf("total: %.1e Mcycles p2p:%.1f%% (%.1f C/P) e2p:%.1f%% (%.1f F/C) e2l:%.1f%% (%.1f F/C) l2p:%.1f%%\n",  
+
+		printf("total: %.1e Mcycles p2p:%.1f%% (%.1f C/P) e2p:%.1f%% (%.1f F/C) e2l:%.1f%% (%.1f F/C) l2p:%.1f%%\n",
 		       tot * 1e-6,
 #ifdef MIXPREC
 		       force_p2p_8x8f_cycles * 100. / tot, p2pCPP,
 #else
 		       force_p2p_8x8_cycles * 100. / tot, p2pCPP,
 #endif
-		       force_e2p_8x8_cycles * 100. / tot, e2pFPC, 
+		       force_e2p_8x8_cycles * 100. / tot, e2pFPC,
 		       force_e2l_cycles * 100. / tot, e2lFPC,
 		       force_l2p_8x8_cycles * 100. / tot);
 #endif
 	    }
 
     } td;
-    
+
 #pragma omp threadprivate(td)
 
     template<int size>
-    struct E2LWork 
+    struct E2LWork
     {
 	int count;
 	realtype *const rdst,  *const idst;
@@ -136,7 +136,7 @@ namespace EvaluateForce
 	void _flush()
 	    {
 		kernelcall(count, force_e2l, x0s, y0s, masses, rxps, ixps, count, rdst, idst);
-		
+
 		count = 0;
 	    }
 
@@ -162,7 +162,7 @@ namespace EvaluateForce
 
 #define TILE 8
 #define BRICKSIZE (TILE * TILE)
-    
+
     void evaluate(realtype * const xresultbase, realtype * const yresultbase,
 		  const realtype x0, const realtype y0, const realtype h,
 		  const realtype theta)
@@ -233,7 +233,7 @@ namespace EvaluateForce
 			    kernelcall(1, force_e2p_8x8, node->mass, x0 + (bx + 0) * h - xcom, y0 + (by + 0) * h - ycom, h,
 				       Tree::expansions + ORDER * (2 * nodeid + 0),
 				       Tree::expansions + ORDER * (2 * nodeid + 1),
-				       result, result + BRICKSIZE);		    
+				       result, result + BRICKSIZE);
 			else
 			{
 			    if (!node->state.innernode)
@@ -260,18 +260,18 @@ namespace EvaluateForce
 			}
 		    }
 		}
-		
+
 		e2lwork.finalize();
-		
+
 		kernelcall(1, force_l2p_8x8, h * (0 - 0.5 * (TILE - 1)),
 			   h * (0 - 0.5 * (TILE - 1)),
 			   h, rlocal, ilocal, result, result + BRICKSIZE);
-		
+
 #ifdef MIXPREC
 		for(int i = 0; i < 2 * BRICKSIZE; ++i)
 		    result[i] += resultf[i];
 #endif
-		
+
 		for(int iy = 0; iy < TILE; ++iy)
 		    for(int ix = 0; ix < TILE; ++ix)
 			xresultbase[bx + ix + BLOCKSIZE * (by + iy)] = result[ix + TILE * iy];
@@ -297,10 +297,10 @@ namespace EvaluateForce
 			     realtype * const ydst)
     {
 	const double t0 =  omp_get_wtime();
-	
+
 	Tree::build(xsrc, ysrc, vsrc, nsrc,
 #ifdef MIXPREC
-		    256
+		    128
 #else
 		    96
 #endif
@@ -319,13 +319,13 @@ namespace EvaluateForce
 	    vdataf32[i] = (float)Tree::vdata[i];
 	}
 #endif
-	
+
 	const double t1 = omp_get_wtime();
 #pragma omp parallel
 	{
 	    td.init();
 
-#pragma omp for schedule(dynamic,1)	
+#pragma omp for schedule(dynamic,1)
 	    for(int i = 0; i < nblocks; ++i)
 		evaluate(xdst + i * BLOCKSIZE * BLOCKSIZE, ydst + i * BLOCKSIZE * BLOCKSIZE, x0s[i], y0s[i], hs[i], theta);
 
@@ -333,7 +333,7 @@ namespace EvaluateForce
 	}
 
 	const double t2 = omp_get_wtime();
-	
+
 	Tree::dispose();
 #ifdef MIXPREC
 	free(xdataf32);

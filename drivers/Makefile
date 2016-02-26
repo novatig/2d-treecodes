@@ -30,6 +30,14 @@ ifeq "$(profiling)" "1"
 	TLPFLAGS += -pg
 endif
 
+ifeq "$(mixprec)" "1"
+	CXXFLAGS += -DMIXPREC
+endif
+
+ifeq "$(instrumentation)" "1"
+	CXXFLAGS += -DINSTRUMENTATION
+endif
+
 potential: treecode-potential.o order$(order)-upward.o sort-sources.o
 
 force: treecode-force.o order$(order)-upward.o sort-sources.o
