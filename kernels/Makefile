@@ -17,10 +17,16 @@ OBJS = order$(order)-upward-kernels.o upward-common.o
 ifneq "$(MAKECMDGOALS)" "force"
 	OBJS += order$(order)-potential-kernels.o
 else
-	OBJS += order$(order)-force-kernels.o 
+	OBJS += order$(order)-force-kernels.o order$(order)-force-kernels-f32.o
 endif
 
 potential force: $(OBJS)
+
+order$(order)-force-kernels-f32.o: order$(order)-force-kernels-f32.ispc Makefile
+	ispc  $< -Drealtype=$(real) -O3 --arch=x86-64 --math-lib=fast \
+	--opt=disable-assertions --opt=fast-math \
+	--cpu=haswell --target=avx2-i32x8 \
+	--wno-perf --pic -o $@
 
 %.o: %.ispc Makefile
 	ispc  $< -Drealtype=$(real) -O3 --arch=x86-64 --math-lib=fast \

@@ -26,6 +26,17 @@ extern "C"
 		       const realtype h,
 		       realtype * const xresult,
 		       realtype * const yresult);
+
+    __attribute__ ((visibility ("hidden")))
+    void force_p2p_8x8f(const float * __restrict__ const xsources,
+			const float * __restrict__ const ysources,
+			const float * __restrict__ const sources,
+			const int nsources,
+			const float xt,
+			const float yt,
+			const float h,
+			float * const xresult,
+			float * const yresult);
     
     __attribute__ ((visibility ("hidden")))
     void force_e2p_8x8(const realtype mass,
