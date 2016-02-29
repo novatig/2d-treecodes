@@ -11,6 +11,8 @@
 #
 real ?= double
 order ?= 12
+cpu ?= haswell
+isa ?= avx2
 
 OBJS = order$(order)-upward-kernels.o upward-common.o
 
@@ -25,13 +27,13 @@ potential force: $(OBJS)
 order$(order)-force-kernels-f32.o: order$(order)-force-kernels-f32.ispc Makefile
 	ispc  $< -Drealtype=$(real) -O3 --arch=x86-64 --math-lib=fast \
 	--opt=disable-assertions --opt=fast-math \
-	--cpu=haswell --target=avx2-i32x8 \
+	--cpu=$(cpu) --target=$(isa)-i32x8 \
 	--wno-perf --pic -o $@
 
 %.o: %.ispc Makefile
 	ispc  $< -Drealtype=$(real) -O3 --arch=x86-64 --math-lib=fast \
 	--opt=disable-assertions --opt=fast-math \
-	--cpu=haswell --target=avx2-i64x4 \
+	--cpu=$(cpu) --target=$(isa)-i64x4 \
 	--wno-perf --pic -o $@
 
 order$(order)-%.ispc: %.m4 Makefile
