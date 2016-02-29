@@ -300,7 +300,7 @@ namespace EvaluateForce
 #ifdef MIXPREC
 		    128
 #else
-		    96
+		    64
 #endif
 	    );
 
@@ -323,7 +323,7 @@ namespace EvaluateForce
 	{
 	    td.init();
 
-#pragma omp for schedule(dynamic, 2)
+#pragma omp for schedule(dynamic, 1)
 	    for(int i = 0; i < nblocks; ++i)
 		evaluate(xdst + i * BLOCKSIZE * BLOCKSIZE, ydst + i * BLOCKSIZE * BLOCKSIZE, x0s[i], y0s[i], hs[i], theta);
 
