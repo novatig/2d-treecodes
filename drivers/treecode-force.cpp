@@ -84,9 +84,7 @@ namespace EvaluateForce
 					    force_l2p_8x8_cycles );
 
 		const double e2pflops =
-		    force_e2p_8x8_calls
-
-		    *
+		    force_e2p_8x8_calls *
 		    (2 * 8 + 8 * (2 + 8 * (2 + 1 + 2 + 2) + 8 * ORDER * (6 + 10) + 8 * 2));
 
 		const double e2pFPC = e2pflops / force_e2p_8x8_cycles;
@@ -325,7 +323,7 @@ namespace EvaluateForce
 	{
 	    td.init();
 
-#pragma omp for schedule(dynamic,1)
+#pragma omp for schedule(dynamic, 2)
 	    for(int i = 0; i < nblocks; ++i)
 		evaluate(xdst + i * BLOCKSIZE * BLOCKSIZE, ydst + i * BLOCKSIZE * BLOCKSIZE, x0s[i], y0s[i], hs[i], theta);
 
