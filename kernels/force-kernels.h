@@ -26,6 +26,17 @@ extern "C"
 		       const realtype h,
 		       realtype * const xresult,
 		       realtype * const yresult);
+
+    __attribute__ ((visibility ("hidden")))
+    void force_p2p_8x8f(const float * __restrict__ const xsources,
+			const float * __restrict__ const ysources,
+			const float * __restrict__ const sources,
+			const int nsources,
+			const float xt,
+			const float yt,
+			const float h,
+			float * const xresult,
+			float * const yresult);
     
     __attribute__ ((visibility ("hidden")))
     void force_e2p_8x8(const realtype mass,
@@ -38,22 +49,22 @@ extern "C"
 		       realtype * const yresult);
     
     __attribute__ ((visibility ("hidden")))
-    void downward_e2l(const realtype * x0s,
-		      const realtype * y0s,
-		      const realtype * masses,
-		      const realtype * __restrict__ * const vrexpansions,
-		      const realtype * __restrict__ * const viexpansions,
-		      const int nexpansions,
-		      realtype * __restrict__ const rlocal,
-		      realtype * __restrict__ const ilocal);
+    void force_e2l(const realtype * x0s,
+		   const realtype * y0s,
+		   const realtype * masses,
+		   const realtype * __restrict__ * const vrexpansions,
+		   const realtype * __restrict__ * const viexpansions,
+		   const int nexpansions,
+		   realtype * __restrict__ const rlocal,
+		   realtype * __restrict__ const ilocal);
 
     __attribute__ ((visibility ("hidden")))
-    void downward_l2p_8x8(const realtype rx,
-			  const realtype ry,
-			  const realtype h,
-			  const realtype * __restrict__ const rlocal,
-			  const realtype * __restrict__ const ilocal,
-			  realtype * const xresult,
-			  realtype * const yresult);
+    void force_l2p_8x8(const realtype rx,
+		       const realtype ry,
+		       const realtype h,
+		       const realtype * __restrict__ const rlocal,
+		       const realtype * __restrict__ const ilocal,
+		       realtype * const xresult,
+		       realtype * const yresult);
 }
 
