@@ -228,7 +228,7 @@ namespace EvaluateForce
 			const realtype r2 = pow(xt - xcom, 2) + pow(yt - ycom, 2);
 
 			if (node->r * node->r < theta * theta * r2)
-			    kernelcall(1, force_e2p_8x8, node->mass, x0 + (bx + 0) * h - xcom, y0 + (by + 0) * h - ycom, h,
+			    kernelcall(1, force_e2p_8x8, node->mass, x0 + bx * h - xcom, y0 + by * h - ycom, h,
 				       Tree::expansions + ORDER * (2 * nodeid + 0),
 				       Tree::expansions + ORDER * (2 * nodeid + 1),
 				       result, result + BRICKSIZE);
@@ -240,11 +240,11 @@ namespace EvaluateForce
 				const int e = node->e;
 #ifdef MIXPREC
 				kernelcall(e - s, force_p2p_8x8f, &xdataf32[s], &ydataf32[s], &vdataf32[s],
-					   e - s, x0 + (bx + 0) * h, y0 + (by + 0) * h, h,
+					   e - s, x0 + bx * h, y0 + by * h, h,
 					   resultf, resultf + BRICKSIZE);
 #else
 				kernelcall(e - s, force_p2p_8x8, &Tree::xdata[s], &Tree::ydata[s], &Tree::vdata[s],
-					   e - s, x0 + (bx + 0) * h, y0 + (by + 0) * h, h,
+					   e - s, x0 + bx * h, y0 + by * h, h,
 					   result, result + BRICKSIZE);
 #endif
 			    }
@@ -261,8 +261,7 @@ namespace EvaluateForce
 
 		e2lwork.finalize();
 
-		kernelcall(1, force_l2p_8x8, h * (0 - 0.5 * (TILE - 1)),
-			   h * (0 - 0.5 * (TILE - 1)),
+		kernelcall(1, force_l2p_8x8, h * -0.5 * (TILE - 1), h * -0.5 * (TILE - 1),
 			   h, rlocal, ilocal, result, result + BRICKSIZE);
 
 #ifdef MIXPREC
@@ -295,14 +294,29 @@ namespace EvaluateForce
 			     realtype * const ydst)
     {
 	const double t0 =  omp_get_wtime();
+	
+#ifdef TUNING
+	int leafcapacity = -1;
+	{
+	    FILE * f = fopen("tune.txt", "r");
+	    fscanf(f, "%d", &leafcapacity);
+	    fclose(f);
 
-	Tree::build(xsrc, ysrc, vsrc, nsrc,
-#ifdef MIXPREC
-		    128
+	    if (leafcapacity > 10000 || leafcapacity < 0)
+	    {
+		printf("oopsa aborting.\n");
+		abort();
+	    }
+	}
 #else
-		    64
+#ifdef MIXPREC
+	const int leafcapacity = 124;
+#else
+	const int leafcapacity = 64;
 #endif
-	    );
+#endif
+
+	Tree::build(xsrc, ysrc, vsrc, nsrc, leafcapacity);
 
 #ifdef MIXPREC
 	posix_memalign((void **)&xdataf32, 32, sizeof(*xdataf32) * nsrc);

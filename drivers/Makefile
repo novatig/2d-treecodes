@@ -34,6 +34,10 @@ ifeq "$(mixprec)" "1"
 	CXXFLAGS += -DMIXPREC
 endif
 
+ifeq "$(tuning)" "1"
+	CXXFLAGS += -DTUNING
+endif
+
 ifeq "$(instrumentation)" "1"
 	CXXFLAGS += -DINSTRUMENTATION
 endif
