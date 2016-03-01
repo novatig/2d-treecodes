@@ -13,6 +13,7 @@ real ?= double
 order ?= 12
 cpu ?= haswell
 isa ?= avx2
+masking ?= 64
 
 OBJS = order$(order)-upward-kernels.o upward-common.o
 
@@ -33,7 +34,7 @@ order$(order)-force-kernels-f32.o: order$(order)-force-kernels-f32.ispc Makefile
 %.o: %.ispc Makefile
 	ispc  $< -Drealtype=$(real) -O3 --arch=x86-64 --math-lib=fast \
 	--opt=disable-assertions --opt=fast-math \
-	--cpu=$(cpu) --target=$(isa)-i64x4 \
+	--cpu=$(cpu) --target=$(isa)-i$(masking)x4 \
 	--wno-perf --pic -o $@
 
 order$(order)-%.ispc: %.m4 Makefile
