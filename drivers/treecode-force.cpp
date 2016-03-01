@@ -298,7 +298,7 @@ namespace EvaluateForce
 
 	Tree::build(xsrc, ysrc, vsrc, nsrc,
 #ifdef MIXPREC
-		    148
+		    152
 #else
 		    64
 #endif
