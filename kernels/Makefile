@@ -17,10 +17,14 @@ OBJS = order$(order)-upward-kernels.o upward-common.o
 ifneq "$(MAKECMDGOALS)" "force"
 	OBJS += order$(order)-potential-kernels.o
 else
-	OBJS += order$(order)-force-kernels.o 
+	OBJS += order$(order)-force-kernels.o order$(order)-force-kernels-f32.o
 endif
 
 potential force: $(OBJS)
+
+order$(order)-force-kernels-f32.o: order$(order)-force-kernels-f32.cpp Makefile
+	$(CXX) -O4 -fstrict-aliasing -march=native -mtune=native -ffast-math \
+	 -fPIC -Drealtype=$(real) -c  $< 
 
 %.o: %.cpp Makefile
 	$(CXX) -O4 -fstrict-aliasing -march=native -mtune=native -ffast-math \

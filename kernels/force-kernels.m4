@@ -97,7 +97,7 @@ extern "C" void force_e2p_8x8(
 
 define(mysign, `ifelse(eval((-1)**($1)), -1,-,+)')
 
-extern "C" void downward_e2l(
+extern "C" void force_e2l(
 	 const realtype x0s[],
 	 const realtype y0s[],
 	 const realtype masses[],
@@ -152,7 +152,7 @@ extern "C" void downward_e2l(
 	}
 }
 
-extern "C" void downward_l2p_8x8(
+extern "C" void force_l2p_8x8(
         const realtype x0,
         const realtype y0,
         const realtype h,
