@@ -1,5 +1,5 @@
-# 2d-treecodes
-This repository is about efficient implementations of 2D Fast Multipole Methods (with open BC) for CPUs and GPUs.
+# FMM in 2D: 2d-treecodes
+This repository is about efficient Poisson solvers based on the 2D FMM (Fast Multipole Methods, open BC) for single-node CPUs and GPUs.
 Two functions are exposed to the client:
 
      void treecode_potential(const double theta,
