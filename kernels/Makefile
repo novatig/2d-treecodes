@@ -23,11 +23,11 @@ endif
 potential force: $(OBJS)
 
 order$(order)-force-kernels-f32.o: order$(order)-force-kernels-f32.cpp Makefile
-	$(CXX) -O4 -fstrict-aliasing -march=native -mtune=native -ffast-math \
+	icpc -Ofast -fno-alias -march=native -mtune=native -xHOST \
 	 -fPIC -Drealtype=$(real) -c  $< 
 
 %.o: %.cpp Makefile
-	icpc -Ofast -march=native -mtune=native -fno-alias \
+	icpc -Ofast -xHOST -march=native -mtune=native -fno-alias \
 	 -fPIC -Drealtype=$(real) -c  $< 
 
 order$(order)-%.cpp: %.m4 Makefile
