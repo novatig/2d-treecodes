@@ -13,6 +13,8 @@
 real ?= double
 order ?= 12
 mrag-blocksize ?= 32
+mixprec ?= 0
+instrumentation ?= 0
 
 OBJS = drivers/order$(order)-upward.o drivers/sort-sources.o
 
