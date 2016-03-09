@@ -17,7 +17,14 @@ define(mysign, `ifelse(eval((-1)**($1)), -1,-,+)')
 divert(0)
 dnl
 
-#define ACCESS(x) __ldg(&(x)) 
+#if !defined(__CUDA_ARCH__)
+#warning __CUDA_ARCH__ not defined! assuming 350
+#define ACCESS(x) __ldg(&x)
+#elif __CUDA_ARCH__ >= 350
+#define ACCESS(x) __ldg(&x)
+#else
+#define ACCESS(x) (x)
+#endif
 
 __device__ void force_p2p(const realtype * __restrict__ const xsources,
 			  const realtype * __restrict__ const ysources,

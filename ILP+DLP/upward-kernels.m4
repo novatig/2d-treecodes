@@ -11,7 +11,15 @@ ifelse(eval(WARPSIZE >= ORDER), 1, ,`
 `#'endif')
 dnl dnl
 #include <cstdio>
-#define ACCESS(x) __ldg(&(x)) 
+
+#if !defined(__CUDA_ARCH__)
+#warning __CUDA_ARCH__ not defined! assuming 350
+#define ACCESS(x) __ldg(&x)
+#elif __CUDA_ARCH__ >= 350
+#define ACCESS(x) __ldg(&x)
+#else
+#define ACCESS(x) (x)
+#endif
 
 __device__ void print_message()
 {
@@ -90,8 +98,6 @@ __device__ void upward_p2e(const realtype xcom,
 	}
 }
 
-#define TOLDENOM 3e-26
-
 __device__ void upward_e2e(
 	const realtype x0,
 	const realtype y0,
@@ -111,9 +117,6 @@ __device__ void upward_e2e(
 	realtype * const icoeff = ary + ARYFP * (3 + 4 * slot);
 	
 	realtype r2z0 = x0 * x0 + y0 * y0;
-
-	if (fabs(r2z0) < TOLDENOM)
-	   r2z0 = 1;
 
 	ARY(rinvz, 1) = x0 / r2z0;
 	ARY(iinvz, 1) = - y0 / r2z0;
@@ -139,7 +142,7 @@ __device__ void upward_e2e(
 		popdef(`BINFAC')dnl
 
 		const realtype TMP(invz2, l) = ARY(rinvz, l) * ARY(rinvz, l) + ARY(iinvz, l) * ARY(iinvz, l);
-		const realtype TMP(invinvz2, l) = fabs(TMP(invz2, l)) > TOLDENOM ? 1 / TMP(invz2, l) : 0;
+		const realtype TMP(invinvz2, l) = TMP(invz2, l) ? 1 / TMP(invz2, l) : 0;
 
 		const realtype TMP(rz, l) = ARY(rinvz, l) * TMP(invinvz2, l);
 		const realtype TMP(iz, l) = - ARY(iinvz, l) * TMP(invinvz2, l);

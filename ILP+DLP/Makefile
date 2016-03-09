@@ -15,6 +15,7 @@ CC = gcc -std=c99
 backend ?= sse
 real ?= double
 order ?= 12
+compute ?= 35
 
 OBJS =order$(order)-upward-kernels.cuda.o 
 
@@ -27,7 +28,7 @@ endif
 potential force: $(OBJS)
 
 %.cuda.o: %.cu Makefile
-	nvcc -Xcompiler '-fPIC' -Xcompiler '-fvisibility=hidden'  -maxrregcount=32  -O4 -arch=compute_35 -code=sm_35 -use_fast_math -dc -c $< -o $@
+	nvcc -Xcompiler '-fPIC' -Xcompiler '-fvisibility=hidden'  -maxrregcount=32  -O4 -arch=compute_$(compute) -code=sm_$(compute) -use_fast_math -dc -c $< -o $@
 
 order$(order)-%.cu: %.m4 Makefile
 	m4 -D realtype=$(real) -D ORDER=$(order) $< > $@

@@ -13,10 +13,11 @@
 real ?= double
 order ?= 12
 mrag-blocksize ?= 32
+compute ?= 35
 
 OBJS = TLP/order$(order)-upward.o TLP/sort-sources.o
 CUDARTPATH=$(CRAY_CUDATOOLKIT_POST_LINK_OPTS)
-NVCCFLAGS = -arch=compute_35 -code=sm_35 -Xcompiler '-fPIC'
+NVCCFLAGS = -code=sm_$(compute) -arch=compute_$(compute) -Xcompiler '-fPIC'
 
 ifeq "$(MAKECMDGOALS)" "libtreecode-force.so"
 	OBJS += TLP/treecode-force.o

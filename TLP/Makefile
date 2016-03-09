@@ -15,9 +15,11 @@ order ?= 12
 mrag-blocksize ?= 32
 #config ?=release
 #profiling = 1
+#code ?= sm_35
+compute ?= 35
 
 TLPFLAGS = -I../ILP+DLP/ -std=c++11 -DREAL=$(real) -DBLOCKSIZE=$(mrag-blocksize) -DORDER=$(order) -DLMAX=15 -O3
-NVCCFLAGS := $(TLPFLAGS) -arch=compute_35 -code=sm_35 -Xcompiler -fopenmp -Xcompiler '-fPIC' -Xcompiler '-fvisibility=hidden' -Xcompiler -O4  -Xcompiler  -mfpmath=sse
+NVCCFLAGS := $(TLPFLAGS) -arch=compute_$(compute) -code=sm_$(compute) -Xcompiler -fopenmp -Xcompiler '-fPIC' -Xcompiler '-fvisibility=hidden' -Xcompiler -O4  -Xcompiler  -mfpmath=sse
 TLPFLAGS += -march=native -fopenmp -fvisibility=hidden  
 
 ifeq "$(config)" "release"
