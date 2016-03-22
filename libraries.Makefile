@@ -29,13 +29,11 @@ endif
 
 libtreecode-potential.so: drivers/treecode-potential.h alldrivers
 	m4 -D realtype=$(real) drivers/treecode-potential.h | sed '/typedef/d' | sed '/attribute/d' > treecode-potential.h
-	nvcc $(NVCCFLAGS) -dlink $(OBJS) -o linkpot.o
-	g++ -shared -o $@ $(OBJS) linkpot.o  -L/usr/local/cuda/lib64 $(CUDARTPATH) -lcudart
+	g++ -shared -o $@ $(OBJS)  -L/usr/local/cuda/lib64 $(CUDARTPATH) -lcudart
 
 libtreecode-force.so: drivers/treecode-force.h alldrivers
 	m4 -D realtype=$(real) drivers/treecode-force.h | sed '/typedef/d' | sed '/attribute/d' > treecode-force.h
-	nvcc $(NVCCFLAGS) -dlink $(OBJS) -o linkfor.o
-	g++ -shared -o $@ $(OBJS)  linkfor.o -L/usr/local/cuda/lib64 $(CUDARTPATH) -lcudart
+	g++ -shared -o $@ $(OBJS) -L/usr/local/cuda/lib64 $(CUDARTPATH) -lcudart
 
 alldrivers:
 	make -C drivers $(TARGET)

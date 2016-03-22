@@ -22,14 +22,6 @@
 #define WARPSIZE 32
 #define NQUEUES 4
 #define LQSIZE 16
-#if !defined(__CUDA_ARCH__)
-#warning __CUDA_ARCH__ not defined! assuming 350
-#define ACCESS(x) __ldg(&x)
-#elif __CUDA_ARCH__ >= 350
-#define ACCESS(x) __ldg(&x)
-#else
-#define ACCESS(x) (x)
-#endif
 
 namespace Tree
 {

@@ -12,20 +12,6 @@ ifelse(eval(WARPSIZE >= ORDER), 1, ,`
 dnl dnl
 #include <cstdio>
 
-#if !defined(__CUDA_ARCH__)
-#warning __CUDA_ARCH__ not defined! assuming 350
-#define ACCESS(x) __ldg(&x)
-#elif __CUDA_ARCH__ >= 350
-#define ACCESS(x) __ldg(&x)
-#else
-#define ACCESS(x) (x)
-#endif
-
-__device__ void print_message()
-{
-printf("hello again from ILPDLP order %d\n", ORDER);
-}
-
 define(`ARY', `$1[tid + 4 * eval($2 - 1)]')
 define(`ARYFP', eval(4 * ORDER))
 

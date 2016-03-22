@@ -13,16 +13,6 @@
 define(NACC, 2)
 include(unroll.m4) dnl
 
-#if !defined(__CUDA_ARCH__)
-#warning __CUDA_ARCH__ not defined! assuming 350
-#define ACCESS(x) __ldg(&x)
-#elif __CUDA_ARCH__ >= 350
-#define ACCESS(x) __ldg(&x)
-#else
-#define ACCESS(x) (x)
-#endif
-
-
 #define EPS (10 * __DBL_EPSILON__)
 
 __device__ realtype potential_p2p(

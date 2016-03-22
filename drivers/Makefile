@@ -13,9 +13,8 @@
 real ?= double
 order ?= 12
 mrag-blocksize ?= 32
-#config ?=release
+config ?=release
 #profiling = 1
-#code ?= sm_35
 compute ?= 35
 
 TLPFLAGS = -I../kernels/ -std=c++11 -DREAL=$(real) -DBLOCKSIZE=$(mrag-blocksize) -DORDER=$(order) -DLMAX=15 -O3 
