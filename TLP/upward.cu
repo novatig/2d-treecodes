@@ -15,7 +15,8 @@
 #include "cuda-common.h"
 #include "upward.h"
 #include "sort-sources.h"
-#include "upward-kernels.h"
+
+#include HEADER_UPWARD_KERNEL
 
 #define MFENCE //__threadfence() 
 #define WARPSIZE 32

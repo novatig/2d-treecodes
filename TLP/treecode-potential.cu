@@ -13,8 +13,9 @@
 #include <cstdio>
 #include <cassert>
 
+#include HEADER_POTENTIAL_KERNEL
+
 #include "cuda-common.h"
-#include "potential-kernels.h"
 #include "upward.h"
 
 #if !defined(__CUDA_ARCH__)

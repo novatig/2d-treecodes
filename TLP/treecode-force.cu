@@ -15,9 +15,9 @@
 #include <cstdio>
 #include <cassert>
 
+#include HEADER_FORCE_KERNEL
+
 #include "cuda-common.h"
-#include "force-kernels.h"
-#include "force-downward-kernels.h"
 #include "upward.h"
 
 #if !defined(__CUDA_ARCH__)

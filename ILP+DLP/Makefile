@@ -10,33 +10,30 @@
 # before getting a written permission from the author of this file.
 #
 
-NVCC ?= nvcc
-CC = gcc -std=c99
-backend ?= sse
 real ?= double
 order ?= 12
 compute ?= 35
 
-OBJS =order$(order)-upward-kernels.cuda.o 
+SRCS =order$(order)-upward-kernels.h
 
 ifneq "$(MAKECMDGOALS)" "force"
-	OBJS += order$(order)-potential-kernels.cuda.o
+	SRCS += order$(order)-potential-kernels.h
 else
-	OBJS += order$(order)-force-kernels.cuda.o 
+	SRCS += order$(order)-force-kernels.h
 endif
 
-potential force: $(OBJS)
+potential force: $(SRCS)
 
-%.cuda.o: %.cu Makefile
-	nvcc -Xcompiler '-fPIC' -Xcompiler '-fvisibility=hidden'  -maxrregcount=32  -O4 -arch=compute_$(compute) -code=sm_$(compute) -use_fast_math -dc -c $< -o $@
+#%.cuda.o: %.cu Makefile
+#	nvcc -Xcompiler '-fPIC' -Xcompiler '-fvisibility=hidden'  -maxrregcount=32  -O4 -arch=compute_$(compute) -code=sm_$(compute) -use_fast_math -dc -c $< -o $@
 
-order$(order)-%.cu: %.m4 Makefile
+order$(order)-%.h: %.m4 Makefile
 	m4 -D realtype=$(real) -D ORDER=$(order) $< > $@
 
 clean:
-	rm -f *.o *kernels*.c *kernels*.cu
+	rm -f *.o *kernels*.c *kernels*.h
 
-.PRECIOUS: order$(order)-%.cu order$(order)-%.o
+.PRECIOUS: order$(order)-%.h
 
 .PHONY = clean potential force
 

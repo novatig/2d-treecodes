@@ -18,15 +18,20 @@ mrag-blocksize ?= 32
 #code ?= sm_35
 compute ?= 35
 
-TLPFLAGS = -I../ILP+DLP/ -std=c++11 -DREAL=$(real) -DBLOCKSIZE=$(mrag-blocksize) -DORDER=$(order) -DLMAX=15 -O3
-NVCCFLAGS := $(TLPFLAGS) -arch=compute_$(compute) -code=sm_$(compute) -Xcompiler -fopenmp -Xcompiler '-fPIC' -Xcompiler '-fvisibility=hidden' -Xcompiler -O4  -Xcompiler  -mfpmath=sse
-TLPFLAGS += -march=native -fopenmp -fvisibility=hidden  
+TLPFLAGS = -I../ILP+DLP/ -std=c++11 -DREAL=$(real) -DBLOCKSIZE=$(mrag-blocksize) -DORDER=$(order) -DLMAX=15 -O3 
+
+NVCCFLAGS := $(TLPFLAGS) -arch=compute_$(compute) -code=sm_$(compute) \
+	-Xcompiler -fopenmp \
+	-Xcompiler '-fPIC' \
+	-Xcompiler '-fvisibility=hidden' \
+	-Xcompiler -O4  \
+	-Xcompiler -mfpmath=sse
+
+TLPFLAGS += -march=native -fopenmp -fvisibility=hidden
 
 ifeq "$(config)" "release"
 	TLPFLAGS +=  -DNDEBUG
 	NVCCFLAGS += -DNDEBUG
-else
-#TLPFLAGS += -g -G
 endif
 
 ifeq "$(profiling)" "1"
@@ -34,21 +39,27 @@ ifeq "$(profiling)" "1"
 	NVCCFLAGS += -lineinfo
 endif
 
-potential: treecode-potential.o order$(order)-upward.o sort-sources.o driver.o
+potential: potentialkernels treecode-potential.o order$(order)-upward.o sort-sources.o driver.o
 
-force: treecode-force.o order$(order)-upward.o sort-sources.o
+force: forcekernels treecode-force.o order$(order)-upward.o sort-sources.o
+
+potentialkernels:
+	make -C ../ILP+DLP potential
+
+forcekernels:
+	make -C ../ILP+DLP force
 
 treecode-potential.o: treecode-potential.cu treecode-potential.h Makefile
-	nvcc $(NVCCFLAGS)  -dc -c $<
+	nvcc $(NVCCFLAGS) -DHEADER_POTENTIAL_KERNEL="\"order$(order)-potential-kernels.h\"" -c $<
 
 driver.o: driver.cpp
 	g++ $(TLPFLAGS) -fPIC -c $<
 
 treecode-force.o: treecode-force.cu treecode-force.h Makefile
-	nvcc $(NVCCFLAGS) -dc -c $<
+	nvcc $(NVCCFLAGS) -DHEADER_FORCE_KERNEL="\"order$(order)-force-kernels.h\"" -c $<
 
 order$(order)-upward.o: upward.cu upward.h Makefile
-	nvcc $(NVCCFLAGS) -dc -c $< -o $@
+	nvcc $(NVCCFLAGS) -DHEADER_UPWARD_KERNEL="\"order$(order)-upward-kernels.h\"" -c $< -o $@
 
 sort-sources.o: sort-sources.cu sort-sources.h Makefile
 	nvcc $(NVCCFLAGS) -c $< -o $@
