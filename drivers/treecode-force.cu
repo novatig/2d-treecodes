@@ -37,7 +37,7 @@ namespace EvaluateForce
     __constant__ Tree::Node * nodes;
     __constant__ realtype * expansions, *xdata, *ydata, *vdata;
 
-    __global__ void  __launch_bounds__(128, 16)
+    __global__ void  __launch_bounds__(128, 12)
     evaluate(const realtype theta,
 	     const realtype thetasquared,
 	     const realtype * const x0s,

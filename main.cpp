@@ -299,7 +299,7 @@ int main(int argc, char ** argv)
 {
     srand48(1451);
 
-    double theta = 1;
+    double theta = .5;
     bool verify = true;
 
     if (argc > 1)

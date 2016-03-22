@@ -17,7 +17,7 @@ config ?=release
 #profiling = 1
 compute ?= 35
 
-TLPFLAGS = -I../kernels/ -std=c++11 -DREAL=$(real) -DBLOCKSIZE=$(mrag-blocksize) -DORDER=$(order) -DLMAX=15 -O3 
+TLPFLAGS = -I../kernels/ -std=c++11 -DREAL=$(real) -DBLOCKSIZE=$(mrag-blocksize) -DORDER=$(order) -DLMAX=15 -O4
 
 NVCCFLAGS := $(TLPFLAGS) -arch=compute_$(compute) -code=sm_$(compute) \
 	-Xcompiler -fopenmp \
@@ -26,7 +26,7 @@ NVCCFLAGS := $(TLPFLAGS) -arch=compute_$(compute) -code=sm_$(compute) \
 	-Xcompiler -O4  \
 	-Xcompiler -mfpmath=sse
 
-TLPFLAGS += -march=native -fopenmp -fvisibility=hidden
+TLPFLAGS += -march=native -fopenmp -fvisibility=hidden -use_fast_math
 
 ifeq "$(config)" "release"
 	TLPFLAGS +=  -DNDEBUG
