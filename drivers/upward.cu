@@ -15,13 +15,13 @@
 #include "cuda-common.h"
 #include "upward.h"
 #include "sort-sources.h"
-#include "upward-kernels.h"
+
+#include HEADER_UPWARD_KERNEL
 
 #define MFENCE //__threadfence() 
 #define WARPSIZE 32
 #define NQUEUES 4
 #define LQSIZE 16
-#define ACCESS(x) __ldg(&(x)) 
 
 namespace Tree
 {
@@ -100,7 +100,8 @@ namespace Tree
     }
 
     __constant__ realtype *xsorted, *ysorted, *vsorted;
-
+    __constant__ realtype tree_extent, tree_xmin, tree_ymin;
+    
     struct NodeHelper
     {
 	int x, y, l, mask, parent, validchildren;
@@ -126,7 +127,7 @@ namespace Tree
     __constant__ NodeHelper * bufhelpers;
     __constant__ realtype * bufexpansion;
 
-    __device__ void process_leaf(const int nodeid, realtype extent)
+    __device__ void process_leaf(const int nodeid)
     {
 	const int tid = threadIdx.x;
 	const bool master = tid == 0;
@@ -160,12 +161,11 @@ namespace Tree
 	    wxsum += __shfl_xor(wxsum, mask);
 	    wysum += __shfl_xor(wysum, mask);
 	}
-
-	const realtype xcom = wsum ? wxsum / wsum : 0;
-	const realtype ycom = wsum ? wysum / wsum : 0;
-
-	if (master && helper->x == 42 && helper->y == 15 && helper->l == 7)
-	    printf("DEVICE w: %.20e: wy: %.20e\n", wsum, wysum);
+	
+	const double h = tree_extent / (1 << helper->l);
+	const double x0 = tree_xmin + h * helper->x, y0 = tree_ymin + h * helper->y;
+	const realtype xcom = wsum ? wxsum / wsum : (x0 + 0.5 * h);
+	const realtype ycom = wsum ? wysum / wsum : (y0 + 0.5 * h);
 
 	upward_p2e(xcom, ycom,
 		   xsorted + s, ysorted + s, vsorted + s, e - s,
@@ -220,83 +220,113 @@ namespace Tree
 
 	    e2e = __shfl(e2e, 0);
 
-	    if (e2e)
+	    if (!e2e)
+		break;
+	    
+	    realtype xcom_parent, ycom_parent;
+	    
+	    int zcount = 0, nzentry = 0;
+	    
+	    if (master)
 	    {
-		realtype xcom_parent, ycom_parent;
-
-		if (master)
-		{
-		    const int childbase = parent->state.childbase;
-		    realtype msum = 0, wsum = 0, wxsum = 0, wysum = 0;
+		const int childbase = parent->state.childbase;
+		realtype msum = 0, wsum = 0, wxsum = 0, wysum = 0;
 		    
-		    for(int c = 0; c < 4; ++c)
-		    {
-			const int childid = childbase + c;
-			const Node * child = bufnodes + childid;
-			msum += child->mass;		
-					
-			const NodeHelper * childhelper = bufhelpers + childid;
-			wsum += childhelper->w;
-			wxsum += childhelper->wx;
-			wysum += childhelper->wy;
-		    }
-
-		    parent->mass = msum;
-		    parenthelper->w = wsum;
-		    parenthelper->wx = wxsum;
-		    parenthelper->wy = wysum;
-
-		    assert(wsum);
-		    xcom_parent = wxsum / wsum;
-		    ycom_parent = wysum / wsum;
-
-		    realtype rr = 0;
-		    for(int c = 0; c < 4; ++c)
-		    {
-			const int childid = childbase + c;
-			const Node * child = bufnodes + childid;
-			const NodeHelper * childhelper = bufhelpers + childid;
-
-			if (childhelper->w)
-			{
-			    const realtype rx = xcom_parent - child->xcom;
-			    const realtype ry = ycom_parent - child->ycom;
-
-			    rr = max(rr, child->r + sqrt(rx * rx + ry * ry));
-			}
-		    }
-
-		    parent->r = min(rr, 1.4143f * extent / (1 << parenthelper->l));
-		    parent->xcom = xcom_parent;
-		    parent->ycom = ycom_parent;
-		}
-
-		xcom_parent = __shfl(xcom_parent, 0);
-		ycom_parent = __shfl(ycom_parent, 0);
-
-		if (tid < 4)
+		for(int c = 0; c < 4; ++c)
 		{
-		    const int childid = parent->state.childbase + tid;
-		    const Node * chd = bufnodes + childid;
+		    const int childid = childbase + c;
+		    const Node * child = bufnodes + childid;
+		    msum += child->mass;		
 			
-		    upward_e2e(chd->xcom - xcom_parent, chd->ycom - ycom_parent, chd->mass,
-			       bufexpansion + ORDER * (2 * childid + 0),
-			       bufexpansion + ORDER * (2 * childid + 1),
-			       bufexpansion + ORDER * (2 * helper->parent + 0),
-			       bufexpansion + ORDER * (2 * helper->parent + 1));
-
-#ifndef NDEBUG
-		    if (master)
-			for(int i = 0; i < 2 * ORDER; ++i)
-			    assert(!isnan(bufexpansion[ORDER * (2 * helper->parent + 0) + i]));
-#endif
+		    const NodeHelper * childhelper = bufhelpers + childid;
+		    wsum += childhelper->w;
+		    wxsum += childhelper->wx;
+		    wysum += childhelper->wy;
 		}
+
+		parent->mass = msum;
+		parenthelper->w = wsum;
+		parenthelper->wx = wxsum;
+		parenthelper->wy = wysum;
+
+		assert(wsum);
+		xcom_parent = wxsum / wsum;
+		ycom_parent = wysum / wsum;
+
+		realtype rr = 0;
+		for(int c = 0; c < 4; ++c)
+		{
+		    const int childid = childbase + c;
+		    const Node * child = bufnodes + childid;
+		    const NodeHelper * childhelper = bufhelpers + childid;
+
+		    if (childhelper->w)
+		    {
+			const realtype rx = xcom_parent - child->xcom;
+			const realtype ry = ycom_parent - child->ycom;
+
+			rr = max(rr, child->r + sqrt(rx * rx + ry * ry));
+		    }
+
+		    const realtype val = childhelper->w;
+		    const bool negligible = fabs(val) < 1.1e-16;
+			
+		    zcount += negligible;
+		    nzentry += (!negligible) * (childbase + c);
+		}
+		
+		parent->r = min(rr, 1.4143f * tree_extent / (1 << parenthelper->l));
+		parent->xcom = xcom_parent;
+		parent->ycom = ycom_parent;
+	    }
+
+	    zcount = __shfl(zcount, 0);
+	    nzentry = __shfl(nzentry, 0);
+		
+	    xcom_parent = __shfl(xcom_parent, 0);
+	    ycom_parent = __shfl(ycom_parent, 0);
+
+	    realtype * const dst = bufexpansion + ORDER * (2 * helper->parent + 0);
+		
+	    if (zcount == 4)
+	    {
+		for(int i = tid; i < 2 * ORDER; i += WARPSIZE)
+		    dst[i] = 0;
 
 		if (master)
-		    MFENCE;
+		{
+		    parent->state.innernode = false;
+		    parent->s = parent->e = 0;
+		}
 	    }
 	    else
-		break;
+		if (zcount == 3)
+		{
+		    realtype * const src = bufexpansion + ORDER * (2 * nzentry + 0);
+			
+		    for(int i = tid; i < 2 * ORDER; i += WARPSIZE)
+			dst[i] = src[i];
+		}
+		else
+		    if (tid < 4)
+		    {
+			const int childid = parent->state.childbase + tid;
+			const Node * chd = bufnodes + childid;
+			    
+			upward_e2e(chd->xcom - xcom_parent, chd->ycom - ycom_parent, chd->mass,
+				   bufexpansion + ORDER * (2 * childid + 0),
+				   bufexpansion + ORDER * (2 * childid + 1),
+				   bufexpansion + ORDER * (2 * helper->parent + 0),
+				   bufexpansion + ORDER * (2 * helper->parent + 1));
+		    }
+		
+#ifndef NDEBUG
+	    if (master)
+		for(int i = 0; i < 2 * ORDER; ++i)
+		    assert(!isnan(bufexpansion[ORDER * (2 * helper->parent + 0) + i]));
+#endif
+	    if (master)
+		MFENCE;
 
 	    node = parent; 
 	    helper = parenthelper;
@@ -331,7 +361,7 @@ namespace Tree
 	qgood = true;
     }
 
-    __global__ void build_tree(const int LEAF_MAXCOUNT, const double extent)
+    __global__ void build_tree(const int LEAF_MAXCOUNT)
     {
 	assert(blockDim.x == warpSize && WARPSIZE == warpSize);
 
@@ -406,7 +436,7 @@ namespace Tree
 
 		if (leaf)
 		{
-		    process_leaf(currid, extent);
+		    process_leaf(currid);
 
 		    if (master)
 			atomicSub(&qitems, 1);
@@ -549,9 +579,10 @@ void Tree::build(const realtype * const xsrc,
     
     int nsmxs = -1;
     CUDA_CHECK(cudaDeviceGetAttribute (&nsmxs, cudaDevAttrMultiProcessorCount, 0));
-       
-    const int device_queuesize = 8e4;
-    const int device_bufsize = 8e4;
+
+    const int maxnodes = (nsrc + LEAF_MAXCOUNT - 1) / LEAF_MAXCOUNT * 6;
+    const int device_queuesize = 2 * ((maxnodes + NQUEUES - 1) / NQUEUES);
+    const int device_bufsize = maxnodes;
 
     CUDA_CHECK(cudaMalloc(&device_queue, sizeof(*device_queue) * device_queuesize * NQUEUES));
     CUDA_CHECK(cudaMalloc(&device_nodes, sizeof(*device_nodes) * device_bufsize));
@@ -594,7 +625,11 @@ void Tree::build(const realtype * const xsrc,
     CUDA_CHECK(cudaEventRecord(evstart));
     
     sort_sources(stream, device_xdata, device_ydata, device_vdata, nsrc, device_keys, &xmin, &ymin, &extent);
-
+    
+    CUDA_CHECK(cudaMemcpyToSymbolAsync(tree_extent, &extent, sizeof(extent)));
+    CUDA_CHECK(cudaMemcpyToSymbolAsync(tree_xmin, &xmin, sizeof(xmin)));
+    CUDA_CHECK(cudaMemcpyToSymbolAsync(tree_ymin, &ymin, sizeof(ymin)));
+ 
     setup<<<1, 1>>>(nsrc);
 
 #ifndef NDEBUG
@@ -602,8 +637,10 @@ void Tree::build(const realtype * const xsrc,
 #else
     const int ysize = max(1, (int)(28.f / max(1.f, ORDER / 12.f)));
 #endif
-    build_tree<<<nsmxs * 2, dim3(32, ysize), sizeof(realtype) * 4 * 4 * ORDER * ysize>>>(LEAF_MAXCOUNT, extent);
+
+    build_tree<<<nsmxs * 2, dim3(32, ysize), sizeof(realtype) * 4 * 4 * ORDER * ysize>>>(LEAF_MAXCOUNT);
     CUDA_CHECK(cudaPeekAtLastError());
+
     conclude<<<1, 1>>>(device_diag);
 
 #ifndef NDEBUG
@@ -665,7 +702,6 @@ void Tree::dispose()
 #include <algorithm>
 #include <limits>
 #include <utility>
-#define TOLDENOM 3e-26
 
 namespace TreeCheck
 {   
@@ -826,6 +862,46 @@ namespace TreeCheck
 		memset(rexpansions, 0, sizeof(realtype) * ORDER);
 		memset(iexpansions, 0, sizeof(realtype) * ORDER);
 		
+		int zcount = 0, nzentry = 0;
+		for(int c = 0; c < 4; ++c)
+		{
+		    const realtype val = children[c]->w;
+		    const bool negligible = fabs(val) < 1.1e-16;
+
+		    //printf("%d: val %e\n", c, val);
+		    
+		    zcount += negligible;
+		    nzentry += (!negligible) * c;
+		}
+		
+		if (zcount == 4)
+		{
+		    for(int i = 0; i < ORDER; ++i)
+			rexpansions[i] = 0;
+
+		    for(int i = 0; i < ORDER; ++i)
+			iexpansions[i] = 0;
+
+		    //node->state.innernode = false;
+		    this->s = this->e = 0;
+
+		    return;
+		}
+
+		if (zcount == 3)
+		{  
+		    realtype * const rsrc = children[nzentry]->rexpansions;
+		    realtype * const isrc = children[nzentry]->iexpansions;
+		    
+		    for(int i = 0; i < ORDER; ++i)
+			rexpansions[i] = rsrc[i];
+		    
+		    for(int i = 0; i < ORDER; ++i)
+			iexpansions[i] = isrc[i];
+
+		    return;
+		}	
+		
 		for(int tid = 0; tid < 4; ++tid)
 		{
 		    const realtype x0 = rx[tid];
@@ -834,9 +910,6 @@ namespace TreeCheck
 		    const realtype r2z0 = x0 * x0 + y0 * y0;
 
 		    realtype rinvz[ORDER], iinvz[ORDER];
-
-		    if (fabs(r2z0) <= TOLDENOM)
-			continue;
 
 		    rinvz[0] = x0 / r2z0;
 		    iinvz[0] = - y0 / r2z0;
@@ -868,7 +941,7 @@ namespace TreeCheck
 			}
 		
 			const realtype invz2 = rinvz[l] * rinvz[l] + iinvz[l] * iinvz[l];
-			const realtype invinvz2 = fabs(invz2) > TOLDENOM ? 1 / invz2 : 0;
+			const realtype invinvz2 = invz2 ? 1 / invz2 : 0;
 			const realtype rz = rinvz[l] * invinvz2;
 			const realtype iz = - iinvz[l] * invinvz2;
 
@@ -1048,15 +1121,23 @@ namespace TreeCheck
 	{
 	    printf("<%s>", (b.leaf ? "LEAF" : "INNER"));
 	    printf("ASDnode %d %d l%d s: %d e: %d. MY: %d %d check passed..\n", b.x, b.y, b.l, b.s, b.e, a.s, a.e);
+	    printf("ASD2node: mass %e vs %e, ref weight %e\n",
+		   b.mass, a.mass, b.w);
 	}
 
 	assert(a.s == b.s);
 	assert(a.e == b.e);
 	
+<<<<<<< HEAD:TLP/upward.cu
 	
 	assert(check_bits(a.mass, b.mass) >= 40 || 
 	       fabs(b.mass) < 1e-11 && check_bits(a.mass, b.mass) >= 20 ||
 	       fabs(b.mass) < 1e-17 && check_bits(a.mass, b.mass) >= 8   );
+=======
+	assert(check_bits(a.mass, b.mass) >= 40 ||
+	       fabs(b.mass) < 1e-10 && check_bits(a.mass, b.mass) >= 20 ||
+	       fabs(b.mass) < 1e-17 && check_bits(a.mass, b.mass) >= 5);
+>>>>>>> 0e2a40fe7a0941c270af68731ffba718c8056c67:drivers/upward.cu
 
 	if (fabs(b.w) >= 1e-16) 
 	    assert(check_bits(a.xcom, b.wx / b.w) >= 32 || b.w == 0);
@@ -1075,7 +1156,7 @@ namespace TreeCheck
 	    assert(24 <= check_bits(resiexp, refiexp, EXPORD) );
 	}
 
-	if (!b.leaf)
+	if (!b.leaf && b.e > b.s)
 	    for(int c = 0; c < 4; ++c)
 		check_tree(EXPORD, a.state.childbase + c, allexp, allnodes, allnodes[a.state.childbase + c], *b.children[c]);
     }

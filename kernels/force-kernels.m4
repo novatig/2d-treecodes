@@ -17,8 +17,6 @@ define(mysign, `ifelse(eval((-1)**($1)), -1,-,+)')
 divert(0)
 dnl
 
-#define ACCESS(x) __ldg(&(x)) 
-
 __device__ void force_p2p(const realtype * __restrict__ const xsources,
 			  const realtype * __restrict__ const ysources,
 			  const realtype * __restrict__ const vsources,
@@ -161,9 +159,10 @@ __device__ void force_downward_l2p(
           const realtype TMP(iresult, 1) = ilocal[1];
 
           LUNROLL(l, 2, eval(ORDER),`
-          const realtype TMP(rz, l) = TMP(rz, eval(l - 1)) * rz_1 - TMP(iz, eval(l - 1)) * iz_1;
-          const realtype TMP(iz, l) = TMP(rz, eval(l - 1)) * iz_1 + TMP(iz, eval(l - 1)) * rz_1;
-
+          ifelse(l, eval(ORDER),, `
+	  const realtype TMP(rz, l) = TMP(rz, eval(l - 1)) * rz_1 - TMP(iz, eval(l - 1)) * iz_1;
+          const realtype TMP(iz, l) = TMP(rz, eval(l - 1)) * iz_1 + TMP(iz, eval(l - 1)) * rz_1;')
+	  
           const realtype TMP(rresult, l) = TMP(rresult, eval(l - 1)) +
           l * (rlocal[l] * TMP(rz, eval(l - 1)) - ilocal[l] * TMP(iz, eval(l - 1)));
 

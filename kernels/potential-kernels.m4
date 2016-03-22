@@ -12,7 +12,7 @@
 
 define(NACC, 2)
 include(unroll.m4) dnl
-#define ACCESS(x) __ldg(&(x)) 
+
 #define EPS (10 * __DBL_EPSILON__)
 
 __device__ realtype potential_p2p(

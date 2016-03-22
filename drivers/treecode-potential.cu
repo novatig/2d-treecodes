@@ -14,10 +14,9 @@
 #include <cassert>
 
 #include "cuda-common.h"
-#include "potential-kernels.h"
 #include "upward.h"
 
-#define ACCESS(x) __ldg(&(x)) 
+#include HEADER_POTENTIAL_KERNEL
 
 namespace EvaluatePotential
 {

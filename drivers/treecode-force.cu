@@ -16,11 +16,9 @@
 #include <cassert>
 
 #include "cuda-common.h"
-#include "force-kernels.h"
-#include "force-downward-kernels.h"
 #include "upward.h"
 
-#define ACCESS(x) __ldg(&(x)) 
+#include HEADER_FORCE_KERNEL
 
 namespace EvaluateForce
 {
