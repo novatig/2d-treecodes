@@ -15,39 +15,34 @@ order ?= 12
 mrag-blocksize ?= 32
 compute ?= 35
 
-OBJS = TLP/order$(order)-upward.o TLP/sort-sources.o
+OBJS = drivers/order$(order)-upward.o drivers/sort-sources.o
 CUDARTPATH=$(CRAY_CUDATOOLKIT_POST_LINK_OPTS)
 NVCCFLAGS = -code=sm_$(compute) -arch=compute_$(compute) -Xcompiler '-fPIC'
 
 ifeq "$(MAKECMDGOALS)" "libtreecode-force.so"
-	OBJS += TLP/treecode-force.o
+	OBJS += drivers/treecode-force.o
 	TARGET=force
 else
-	OBJS += TLP/treecode-potential.o  TLP/driver.o
+	OBJS += drivers/treecode-potential.o drivers/driver.o
 	TARGET=potential
 endif
 
-OBJS += $(wildcard ILP+DLP/order$(order)-*.o)
-
-libtreecode-potential.so: TLP/treecode-potential.h drivers
-	m4 -D realtype=$(real) TLP/treecode-potential.h | sed '/typedef/d' | sed '/attribute/d' > treecode-potential.h
+libtreecode-potential.so: drivers/treecode-potential.h alldrivers
+	m4 -D realtype=$(real) drivers/treecode-potential.h | sed '/typedef/d' | sed '/attribute/d' > treecode-potential.h
 	nvcc $(NVCCFLAGS) -dlink $(OBJS) -o linkpot.o
 	g++ -shared -o $@ $(OBJS) linkpot.o  -L/usr/local/cuda/lib64 $(CUDARTPATH) -lcudart
 
-libtreecode-force.so: TLP/treecode-force.h drivers
-	m4 -D realtype=$(real) TLP/treecode-force.h | sed '/typedef/d' | sed '/attribute/d' > treecode-force.h
+libtreecode-force.so: drivers/treecode-force.h alldrivers
+	m4 -D realtype=$(real) drivers/treecode-force.h | sed '/typedef/d' | sed '/attribute/d' > treecode-force.h
 	nvcc $(NVCCFLAGS) -dlink $(OBJS) -o linkfor.o
 	g++ -shared -o $@ $(OBJS)  linkfor.o -L/usr/local/cuda/lib64 $(CUDARTPATH) -lcudart
 
-drivers: kernels
-	make -C TLP $(TARGET)
-
-kernels:
-	make -C ILP+DLP order=$(order) $(TARGET)
+alldrivers:
+	make -C drivers $(TARGET)
 
 clean:
 	rm -f test *.so treecode-potential.h treecode-force.h
-	make -C TLP clean
-	make -C ILP+DLP clean
+	make -C drivers clean
+	make -C kernels clean
 
 .PHONY = clean drivers kernels

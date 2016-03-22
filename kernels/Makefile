@@ -1,5 +1,5 @@
 #
-# Makefile
+# kernels/Makefile
 # Part of MRAG/2d-treecode-potential
 #
 # Created and authored by Diego Rossinelli on 2015-09-25.
@@ -23,9 +23,6 @@ else
 endif
 
 potential force: $(SRCS)
-
-#%.cuda.o: %.cu Makefile
-#	nvcc -Xcompiler '-fPIC' -Xcompiler '-fvisibility=hidden'  -maxrregcount=32  -O4 -arch=compute_$(compute) -code=sm_$(compute) -use_fast_math -dc -c $< -o $@
 
 order$(order)-%.h: %.m4 Makefile
 	m4 -D realtype=$(real) -D ORDER=$(order) $< > $@

@@ -27,7 +27,7 @@ ifeq "$(gprof)" "1"
 endif
 
 test: main.cpp libraries
-	nvcc $(NVCCFLAGS) -g $<  libtreecode-potential.so libtreecode-force.so  -o test 
+	nvcc $(NVCCFLAGS) -g $< libtreecode-potential.so libtreecode-force.so -o test 
 
 libraries:
 	make -f libraries.Makefile order=$(potential-order) libtreecode-potential.so
