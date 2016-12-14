@@ -9,6 +9,7 @@
  *  to employ the present software for their own publications
  *  before getting a written permission from the author of this file.
  */
+#define EPS (2 * __DBL_EPSILON__)
 
 export void upward_setup(
     const uniform realtype xsources[],
@@ -41,10 +42,10 @@ export void upward_setup(
     *xsum = reduce_add(wxsum);
     *ysum = reduce_add(wysum);
 
-    const realtype xcom = wsum ? *xsum / *weight : 0;
-    const realtype ycom = wsum ? *ysum / *weight : 0;
+    const realtype xcom = *weight ? *xsum / *weight : xsources[0]; 
+    const realtype ycom = *weight ? *ysum / *weight : ysources[0];
 
-    realtype r2 = 0;
+    realtype r2 = EPS;
     foreach(i = 0 ... nsources)
     {
 	const realtype xr = xsources[i] - xcom;

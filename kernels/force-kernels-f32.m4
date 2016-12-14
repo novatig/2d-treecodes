@@ -32,10 +32,11 @@ export void force_p2p_8x8f(
     		
 		LUNROLL(iy, 0, 7, `
 		uniform const float TMP(yr, iy) = TMP(yt, iy) - ysrc;
-		uniform const float TMP(yr2, iy) = TMP(yr, iy) * TMP(yr, iy) + eps;')
+		uniform const float TMP(yr2, iy) = TMP(yr, iy) * TMP(yr, iy);')
 
 		LUNROLL(iy, 0, 7, `
-		const float TMP(factor, iy) = vsrc / (xr2 + TMP(yr2, iy));
+    const float TMP(denom, iy) = xr2 + TMP(yr2, iy);
+    const float TMP(factor, iy) = TMP(denom, iy) ? vsrc/ TMP(denom, iy) : 0;
 		TMP(xsum, iy) += xr * TMP(factor, iy);
     		TMP(ysum, iy) += TMP(yr, iy) * TMP(factor, iy);')
 	}

@@ -11,7 +11,7 @@
  */
 
 include(unroll.m4)
-
+#define EPS (2 * __DBL_EPSILON__)
 export void force_p2p_8x8(
 			 uniform const realtype xsources[],
 			 uniform const realtype ysources[],
@@ -23,8 +23,8 @@ export void force_p2p_8x8(
 			 uniform realtype xresult[],
 			 uniform realtype yresult[])
 {
-	uniform const double eps = 10 * __DBL_EPSILON__;
-	
+	uniform const double eps = EPS;
+
 	LUNROLL(ix, 0, 1, `
 	const realtype TMP(xt, ix) = x0 + (eval(ix * 4) + programIndex) * h;')
 	
@@ -121,6 +121,8 @@ export void force_e2l(
 	uniform realtype rlocal[],
 	uniform realtype ilocal[])
 {
+	uniform const double eps = EPS;
+
 	foreach(i = 0 ... nexpansions)
 	{
 		const realtype mass = masses[i];
@@ -128,7 +130,7 @@ export void force_e2l(
 		const realtype x0 = x0s[i];
 		const realtype y0 = y0s[i];
 
-		const realtype r2z0 = x0 * x0 + y0 * y0;
+		const realtype r2z0 = x0 * x0 + y0 * y0 + eps;
     		const realtype rinvz_1 = x0 / r2z0;
     		const realtype iinvz_1 = -y0 / r2z0; //5 FLOPs
 

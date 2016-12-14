@@ -84,11 +84,11 @@ namespace Tree
 	    assert(!isnan(expansions[ORDER * (2 * helper->parent + 0) + i]));
 #endif
 
-	assert(node->r < 1.5 * h);
+	assert(!w || node->r < 1.5 * h);
 
 #ifndef NDEBUG
-	assert(node->xcom >= x0 && node->xcom < x0 + h &&
-	       node->ycom >= y0 && node->ycom < y0 + h ||
+	assert(node->xcom >= x0 && node->xcom <= x0 + h &&
+	       node->ycom >= y0 && node->ycom <= y0 + h ||
 	       node->e - node->s == 0);
 #endif
 	
@@ -239,7 +239,7 @@ namespace Tree
 
 #ifndef NDEBUG
 	for(int i = s; i < e; ++i)
-	    assert(xdata[i] >= x0 && xdata[i] < x0 + h && ydata[i] >= y0 && ydata[i] < y0 + h);
+	    assert(xdata[i] >= x0 && xdata[i] <= x0 + h && ydata[i] >= y0 && ydata[i] <= y0 + h);
 #endif
 
 	const bool leaf = e - s <= LEAF_MAXCOUNT || l + 1 > LMAX;

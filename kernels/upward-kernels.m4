@@ -109,9 +109,9 @@ export void upward_e2e(
                  const realtype mass = masses[programIndex];
 
                  const realtype r2z0 = x0 * x0 + y0 * y0;
-		 //const realtype inv_r2z0 = 1 / r2z0;
-                 const realtype rinvz_1 =  x0 / r2z0;
-                 const realtype iinvz_1 = -y0 / r2z0;
+		             const realtype inv_r2z0 = r2z0 ? 1 / r2z0 : 0;
+                 const realtype rinvz_1 =  x0 * inv_r2z0;
+                 const realtype iinvz_1 = -y0 * inv_r2z0;
 		 dnl
 		 dnl
 		 LUNROLL(j, 1, eval(ORDER),`
